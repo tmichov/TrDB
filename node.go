@@ -128,3 +128,17 @@ func (n *Node) deserialize(buf []byte) {
 		}
 }
 
+func (n *Node) writeNode(node *Node) (*Node, error) {
+		return n.dal.writeNode(node)
+}
+
+func (n *Node) writeNodes(nodes ...*Node) {
+		for _, node := range nodes {
+				n.writeNode(node)
+		}
+}
+
+func (n *Node) getNode(pageNum pgnum) (*Node, error) {
+		return n.dal.getNode(pageNum)
+}
+
