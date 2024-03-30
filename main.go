@@ -1,29 +1,18 @@
 package main
 
+import "fmt"
+
 func main() {
-		dal, _ := newDal("test.db")
+		dal, _ := newDal("mainTest")
 
-		p := dal.allocateEmptyPage()
-		p.num = dal.getNextPage()
+		node, _ := dal.getNode(dal.root)
+		node.dal = dal
 
-		copy(p.data[:], []byte("Hello, World!"))
+		index, containingNode, _ := node.findKey([]byte("Key1"))
 
-		_ = dal.writePage(p)
-		_, _ = dal.writeFreelist()
+		res := containingNode.items[index]
+
+		fmt.Printf("Key: %s, Value: %s\n", res.key, res.value)
 
 		_ = dal.close()
-
-		dal, _ = newDal("test.db")
-
-		p = dal.allocateEmptyPage()
-		p.num = dal.getNextPage()
-
-		copy(p.data[:], []byte("Hello, World 2 !"))
-
-		_ = dal.writePage(p)
-
-		pageNum := dal.getNextPage()
-		dal.releasePage(pageNum)
-
-		_, _ = dal.writeFreelist()
 }

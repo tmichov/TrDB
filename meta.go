@@ -8,6 +8,7 @@ const (
 
 type meta struct {
 		freelistPage pgnum
+		root					    pgnum
 }
 
 func newEmptyMeta() *meta {
@@ -17,16 +18,20 @@ func newEmptyMeta() *meta {
 func (m *meta) serialize(buf []byte) {
 		pos := 0
 
-		binary.LittleEndian.PutUint64(buf[pos:], uint64(m.freelistPage))
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(m.root))
+		pos += pageNumSize 
 
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(m.freelistPage))
 		pos += pageNumSize 
 }
 
 func (m *meta) deserialize(buf []byte) {
 		pos := 0
 
-		m.freelistPage = pgnum(binary.LittleEndian.Uint64(buf[pos:]))
+		m.root = pgnum(binary.LittleEndian.Uint64(buf[pos:]))
+		pos += pageNumSize
 
+		m.freelistPage = pgnum(binary.LittleEndian.Uint64(buf[pos:]))
 		pos += pageNumSize
 }
 
