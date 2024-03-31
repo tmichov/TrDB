@@ -93,6 +93,55 @@ func (c *Collection) Find(key []byte) (*Item, error) {
 		return containingNode.items[index], nil
 }
 
+func (c *Collection) Remove(key []byte) error {
+		rootNode, err := c.dal.getNode(c.root)
+		if err != nil {
+				return err
+		}
+
+		removeItemIndex, nodeToRemoveFrom, ancestorsIndexes, err := rootNode.findKey(key, true)
+		if err != nil {
+				return err
+		}
+
+		if removeItemIndex == -1 {
+				return nil
+		}
+
+		if nodeToRemoveFrom.isLeaf() {
+				nodeToRemoveFrom.removeItemFromLeaf(removeItemIndex)
+		} else {
+				affectedNodes, err := nodeToRemoveFrom.removeItemFromInternal(removeItemIndex)
+				if err != nil {
+						return err
+				}
+				ancestorsIndexes = append(ancestorsIndexes, affectedNodes...)
+		}
+
+		ancestors, err := c.getNodes(ancestorsIndexes)
+		if err != nil {
+				return err
+		}
+
+		for i := len(ancestors) - 2; i >= 0; i-- {
+				pnode := ancestors[i]
+				node := ancestors[i+1]
+				if node.isUnderPopulated() {
+						err = pnode.rebalanceRemove(node, ancestorsIndexes[i+1])
+						if err != nil {
+								return err
+						}
+				}
+		}
+
+		rootNode = ancestors[0]
+		if len(rootNode.items) == 0 && len(rootNode.childNodes) > 0 {
+				c.root = ancestors[1].pageNum
+		}
+
+		return nil
+}
+
 func (c *Collection) getNodes(indexes []int) ([]*Node, error) {
 		root, err := c.dal.getNode(c.root)
 		if err != nil {

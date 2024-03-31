@@ -1,8 +1,9 @@
 package main
 
 import (
-		"fmt"
-		"os"
+	"fmt"
+	"log"
+	"os"
 )
 
 func main() {
@@ -25,5 +26,15 @@ func main() {
 		item, _ := c.Find([]byte("Key1"))
 
 		fmt.Printf("key is: %s, value is: %s\n", item.key, item.value)
+
+		err := c.Remove([]byte("Key1"))
+		if err != nil {
+				log.Fatal(err)
+		}
+
+		newItem, _:= c.Find([]byte("Key1"))
+
+		dal.writeFreelist()
+		fmt.Printf("item is: %+v\n", newItem)
 		_ = dal.close()
 }

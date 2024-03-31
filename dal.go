@@ -43,6 +43,7 @@ func newDal(path string, options *Options) (*dal, error) {
 				maxFillPercent: options.MaxFillPercent,
 		}
 
+		// exist
 		if _, err := os.Stat(path); err == nil {
 				dal.file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
 				if err != nil {
@@ -61,7 +62,9 @@ func newDal(path string, options *Options) (*dal, error) {
 						return nil, err
 				}
 				dal.freelist = freelist
+				// doesn't exist
 		} else if errors.Is(err, os.ErrNotExist) {
+				// init freelist
 				dal.file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
 				if err != nil {
 						_ = dal.close()
@@ -75,12 +78,14 @@ func newDal(path string, options *Options) (*dal, error) {
 						return nil, err
 				}
 
+				// init root
 				collectionsNode, err := dal.writeNode(NewNodeForSerialization([]*Item{}, []pgnum{}))
 				if err != nil {
 						return nil, err
 				}
 				dal.root = collectionsNode.pageNum
 
+				// write meta page
 				_, err = dal.writeMeta(dal.meta) // other error
 		} else {
 				return nil, err
@@ -88,6 +93,8 @@ func newDal(path string, options *Options) (*dal, error) {
 		return dal, nil
 }
 
+// getSplitIndex should be called when performing rebalance after an item is removed. It checks if a node can spare an
+// element, and if it does then it returns the index when there the split should happen. Otherwise -1 is returned.
 func (d *dal) getSplitIndex(node *Node) int {
 		size := 0
 		size += nodeHeaderSize
@@ -95,6 +102,8 @@ func (d *dal) getSplitIndex(node *Node) int {
 		for i := range node.items {
 				size += node.elementSize(i)
 
+				// if we have a big enough page size (more than minimum), and didn't reach the last node, which means we can
+				// spare an element
 				if float32(size) > d.minThreshold() && i < len(node.items) - 1 {
 						return i + 1
 				}
