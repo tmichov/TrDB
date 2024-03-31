@@ -1,40 +1,29 @@
 package main
 
-import (
-	"fmt"
-	"log"
-	"os"
-)
+import "fmt"
 
 func main() {
-		options := &Options{
-				pageSize: os.Getpagesize(),
-				MinFillPercent: 0.0125,
-				MaxFillPercent: 0.025,
-		}
-		dal, _ := newDal("./mainTest", options)
+		db, _ := Open("Demo7", &Options{MinFillPercent: 0.5, MaxFillPercent: 1.0})
 
-		c := newCollection([]byte("collection1"), dal.root)
-		c.dal = dal
+		tx := db.WriteTx()
+		collectionName := "Demo7Collection"
+		createdCollection, _ := tx.CreateCollection([]byte(collectionName))
 
-		_ = c.Put([]byte("Key1"), []byte("Value1"))
-		_ = c.Put([]byte("Key2"), []byte("Value2"))
-		_ = c.Put([]byte("Key3"), []byte("Value3"))
-		_ = c.Put([]byte("Key4"), []byte("Value4"))
-		_ = c.Put([]byte("Key5"), []byte("Value5"))
-		_ = c.Put([]byte("Key6"), []byte("Value6"))
-		item, _ := c.Find([]byte("Key1"))
+		newKey := []byte("key0")
+		newVal := []byte("value0")
+		_ = createdCollection.Put(newKey, newVal)
+
+		_ = tx.Commit()
+		_ = db.Close()
+
+		db, _ = Open("Demo7", &Options{MinFillPercent: 0.5, MaxFillPercent: 1.0})
+		tx = db.ReadTx()
+		createdCollection, _ = tx.GetCollection([]byte(collectionName))
+
+		item, _ := createdCollection.Find(newKey)
+
+		_ = tx.Commit()
+		_ = db.Close()
 
 		fmt.Printf("key is: %s, value is: %s\n", item.key, item.value)
-
-		err := c.Remove([]byte("Key1"))
-		if err != nil {
-				log.Fatal(err)
-		}
-
-		newItem, _:= c.Find([]byte("Key1"))
-
-		dal.writeFreelist()
-		fmt.Printf("item is: %+v\n", newItem)
-		_ = dal.close()
 }
