@@ -8,6 +8,18 @@ import (
 
 type pgnum uint64
 
+type Options struct {
+		pageSize int
+
+		minFillPercent float32
+		maxFillPercent float32
+}
+
+var DefaultOptions = &Options{
+		minFillPercent: 0.5,
+		maxFillPercent: 0.95,
+}
+
 type page struct {
 		num  pgnum
 		data []byte
@@ -17,14 +29,20 @@ type dal struct {
 		file     *os.File
 		pageSize int
 
+		minFillPercent float32
+		maxFillPercent float32
+
 		*meta
 		*freelist
 }
 
-func newDal(path string) (*dal, error) {
+func newDal(path string, options *Options) (*dal, error) {
 		dal := &dal{
 				meta:     newEmptyMeta(),
 				pageSize: os.Getpagesize(),
+
+				minFillPercent: options.minFillPercent,
+				maxFillPercent: options.maxFillPercent,
 		}
 
 		if _, err := os.Stat(path); err == nil {
@@ -184,4 +202,21 @@ func (d *dal) writeNode(n *Node) (*Node, error) {
 
 func (d *dal) deleteNode(pageNum pgnum) {
 		d.releasePage(pageNum)
+}
+
+
+func (d *dal) maxThreshold() float32 {
+		return d.maxFillPercent * float32(d.pageSize)
+}
+
+func (d *dal) isOverPopulated(node *Node) bool {
+		return float32(node.nodeSize()) > d.maxThreshold()
+}
+
+func (d *dal) minThreshold() float32 {
+		return d.minFillPercent * float32(d.pageSize)
+}
+
+func (d *dal) isUnderPopulated(node *Node) bool {
+		return float32(node.nodeSize()) < d.minThreshold()
 }

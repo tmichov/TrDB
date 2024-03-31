@@ -188,3 +188,45 @@ func findKeyHelper(node *Node, key []byte) (int, *Node, error) {
 
 		return findKeyHelper(nextChildNode, key)
 }
+
+func (n *Node) elementSize(i int) int {
+		size := 0
+		size += len(n.items[i].key)
+		size += len(n.items[i].value)
+		size += pageNumSize
+
+		return size;
+}
+
+func (n *Node) nodeSize() int {
+		size := 0
+		size += nodeHeaderSize
+
+		for i := range n.items {
+				size += n.elementSize(i)
+		}
+
+		size += pageNumSize 
+
+		return size
+}
+
+func (n *Node) addItem(item *Item, insertionIndex int) int {
+		if len(n.items) == insertionIndex {
+				n.items = append(n.items, item)
+				return insertionIndex
+		}
+
+		n.items = append(n.items[:insertionIndex+1], n.items[insertionIndex:]...)
+		n.items[insertionIndex] = item
+
+		return insertionIndex
+}
+
+func (n *Node) isOverPopulated() bool {
+		return n.dal.isOverPopulated(n)
+}
+
+func (n *Node) isUnderPopulated() bool {
+		return n.dal.isUnderPopulated(n)
+}
